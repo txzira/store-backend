@@ -55,7 +55,7 @@
     "restartable": "rs",
     "delay": 2500,
     "execMap": {
-      "ts": "ts-node --esm"
+      "ts": "ts-node-esm"
     }
   }
 }
