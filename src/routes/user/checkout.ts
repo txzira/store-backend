@@ -5,12 +5,9 @@ import db = require("@prisma/client");
 const prisma = new db.PrismaClient();
 const router = express.Router();
 
-const stripe = new Stripe.Stripe(
-  "sk_test_51JpGR9IZK4v7qkytYw4gH7J2l0Q68hKinSVer4LTM2pL7ArJ5uYtRVeDglB5YHNtDddLutu49XKBO0nZbPCKhOmp00LoSE5B7q",
-  {
-    apiVersion: "2023-08-16",
-  }
-);
+const stripe = new Stripe.Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2023-08-16",
+});
 interface CartItem {
   id: string;
   productId: number;

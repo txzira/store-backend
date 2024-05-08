@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "set DEBUG=app  && nodemon ./src/server.ts ",
     "debug": "set DEBUG=* && nodemon ./src/server.ts",
@@ -31,6 +32,7 @@
     "passport": "^0.6.0",
     "passport-google-oauth2": "^0.2.0",
     "passport-local": "^1.0.0",
+    "serverless-http": "^3.2.0",
     "stripe": "^13.7.0"
   },
   "devDependencies": {

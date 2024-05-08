@@ -68,6 +68,6 @@ app.use("/", userUsersRoutes);
 app.use("/", userAccountRoutes);
 app.use("/", userBrandsRoutes);
 
-app.listen(PORT, () => {
-  debug(`Listening on port ${chalk.red(PORT)}`);
-});
+// app.listen(PORT, () => {
+//   debug(`Listening on port ${chalk.red(PORT)}`);
+// });
