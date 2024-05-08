@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "set DEBUG=app  && nodemon ./src/server.ts ",
+    "start": "set DEBUG=app  && nodemon  ./src/server.ts ",
     "debug": "set DEBUG=* && nodemon ./src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -53,6 +53,9 @@
   },
   "nodemonConfig": {
     "restartable": "rs",
-    "delay": 2500
+    "delay": 2500,
+    "execMap": {
+      "ts": "ts-node --esm"
+    }
   }
 }
