@@ -8,5 +8,8 @@
     "emitDecoratorMetadata": true,
     "esModuleInterop": true
   },
-  "include": ["./src/**/*", "./src/lib/*"]
+  "include": ["./src/**/*", "./src/lib/*"],
+  "ts-node": {
+    "esm": true
+  }
 }
