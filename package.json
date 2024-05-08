@@ -5,8 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "ts-node ./src/server.ts ",
-    "build": "tsc",
+    "start": "set DEBUG=app  && nodemon ./src/server.ts ",
     "debug": "set DEBUG=* && nodemon ./src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
