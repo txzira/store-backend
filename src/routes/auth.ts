@@ -149,8 +149,6 @@ const googleAuth = () => {
       (error: any, user: any, info: any) => {
         if (error) res.status(400).json({ success: false, message: error });
         req.login(user, function (error: any) {
-          console.log("inside req.login");
-          console.log(user);
           if (error) return next(error);
           generateCSRFToken(req, res);
           next();
@@ -238,8 +236,9 @@ router.post("/auth/login", localAuth(), (req: any, res: any) => {
 
 router.get(
   "/auth/google/redirect",
+  googleAuth(),
   (request: any, response: any, next: any) => {
-    // console.log(request.user);
+    console.log(request.user);
     const sessionUser = request.user;
 
     response.status(200).json({
