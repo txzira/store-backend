@@ -143,7 +143,7 @@ const googleAuth = () => {
       "google",
       {
         scope: ["email", "profile"],
-        successRedirect: "/protected",
+        successRedirect: "https://txzira-ecommerce.netlify.app/auth/redirect",
         failureRedirect: "auth/failure",
       },
       (error: any, user: any, info: any) => {
