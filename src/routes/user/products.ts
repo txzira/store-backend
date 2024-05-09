@@ -9,17 +9,17 @@ router.get(
   "/products/get-all-active-products",
   async (request: express.Request, response: express.Response) => {
     try {
-      const products = await db.product.findMany({
-        where: { active: true },
-        include: {
-          images: { orderBy: { position: "asc" } },
-          attributeGroups: {
-            include: { attributes: { include: { images: true } } },
-          },
-        },
-      });
+      // const products = await db.product.findMany({
+      //   where: { active: true },
+      //   include: {
+      //     images: { orderBy: { position: "asc" } },
+      //     attributeGroups: {
+      //       include: { attributes: { include: { images: true } } },
+      //     },
+      //   },
+      // });
 
-      return response.status(200).json(products);
+      return response.status(200).json({ products: "hello" });
     } catch (error) {
       console.log(error);
     }
