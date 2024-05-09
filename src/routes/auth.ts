@@ -23,7 +23,8 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      callbackURL: "https://txzira-ecommerce.netlify.app/auth/google/callback",
+      callbackURL:
+        "https://store-backend-v7uo.onrender.com/auth/google/callback",
       passReqToCallback: true,
     },
     async function (
