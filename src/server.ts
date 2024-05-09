@@ -1,6 +1,6 @@
 import express = require("express");
 import prisma = require("@prisma/client");
-const db: prisma.PrismaClient = require("../../lib/prisma.server");
+const db: prisma.PrismaClient = require("./lib/prisma.server");
 
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
