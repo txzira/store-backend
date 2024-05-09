@@ -54,6 +54,9 @@ app.use(
     origin: [process.env.ORIGIN_URL!],
   })
 );
+app.get("/", () => {
+  console.log("helloworld");
+});
 
 app.use("/", authRoutes);
 app.use("/admin", adminProductRoutes);
