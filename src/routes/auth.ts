@@ -238,6 +238,7 @@ router.get(
   "/auth/google/redirect",
   (request: any, response: any, next: any) => {
     const sessionUser = request.session.passport.user;
+    console.log(request.session);
 
     response.status(200).json({
       message: "success",
