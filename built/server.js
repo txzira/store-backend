@@ -1,16 +1,20 @@
 "use strict";
-exports.__esModule = true;
+var __importDefault =
+  (this && this.__importDefault) ||
+  function (mod) {
+    return mod && mod.__esModule ? mod : { default: mod };
+  };
+Object.defineProperty(exports, "__esModule", { value: true });
 var express = require("express");
 var cookieParser = require("cookie-parser");
 var bodyParser = require("body-parser");
 var session = require("express-session");
 var passport = require("passport");
-var serverless = require("serverless-http");
 require("dotenv").config();
 var chalk = require("chalk");
 var debug = require("debug")("app");
 var morgan = require("morgan");
-var cors_1 = require("cors");
+var cors_1 = __importDefault(require("cors"));
 var authRoutes = require("./routes/auth");
 var adminProductRoutes = require("./routes/admin/products");
 var adminCategoriesRoutes = require("./routes/admin/categories");
@@ -23,6 +27,7 @@ var userProductsRoutes = require("./routes/user/products");
 var userUsersRoutes = require("./routes/user/users");
 var userAccountRoutes = require("./routes/user/account");
 var userBrandsRoutes = require("./routes/user/brands");
+var PORT = process.env.PORT || 3000;
 var app = express();
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -30,18 +35,22 @@ app.use(cookieParser());
 app.use(express.static("public"));
 app.use(morgan("tiny"));
 // app.use(express.static(path.join(__dirname, "/public/")));
-app.use(session({
+app.use(
+  session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 3600000 }
-}));
+    cookie: { maxAge: 3600000 },
+  })
+);
 app.use(passport.initialize());
 app.use(passport.session());
-app.use((0, cors_1["default"])({
+app.use(
+  (0, cors_1.default)({
     credentials: true,
-    origin: [process.env.ORIGIN_URL]
-}));
+    origin: [process.env.ORIGIN_URL],
+  })
+);
 app.use("/", authRoutes);
 app.use("/admin", adminProductRoutes);
 app.use("/admin", adminCategoriesRoutes);
@@ -54,4 +63,6 @@ app.use("/", userProductsRoutes);
 app.use("/", userUsersRoutes);
 app.use("/", userAccountRoutes);
 app.use("/", userBrandsRoutes);
-module.exports.handler = serverless(app);
+app.listen(PORT, function () {
+  debug("Listening on port ".concat(chalk.red(PORT)));
+});
