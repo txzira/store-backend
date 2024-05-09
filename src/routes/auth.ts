@@ -237,8 +237,8 @@ router.post("/auth/login", localAuth(), (req: any, res: any) => {
 router.get(
   "/auth/google/redirect",
   (request: any, response: any, next: any) => {
-    const sessionUser = request.session.passport.user;
     console.log(request.session);
+    const sessionUser = request.session.passport.user;
 
     response.status(200).json({
       message: "success",
