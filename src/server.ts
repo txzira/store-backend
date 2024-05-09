@@ -1,7 +1,9 @@
 import express = require("express");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
-const session = require("cookie-session");
+// const session = require("cookie-session");
+const session = require("express-session");
+
 const passport = require("passport");
 require("dotenv").config();
 
