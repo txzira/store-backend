@@ -168,7 +168,7 @@ const checkCSRFToken = () => {
 
 const isLoggedIn = () => {
   return (request: any, response: any, next: any) => {
-    request.user && request.isAuthenticated() && request.session.passport.user
+    request.user && request.isAuthenticated()
       ? next()
       : response.status(401).send(false);
   };
@@ -226,7 +226,7 @@ router.get(
 );
 
 router.post("/auth/login", localAuth(), (req: any, res: any) => {
-  const sessionUser = req.session.passport.user;
+  const sessionUser = req.user;
   res.status(200).json({
     message: "success",
     user: { name: sessionUser.name, email: sessionUser.email },
