@@ -5,26 +5,27 @@ const db: prisma.PrismaClient = require("../../lib/prisma.server");
 
 const router = express.Router();
 
-router.get(
-  "/products/get-all-active-products",
-  async (request: express.Request, response: express.Response) => {
-    try {
-      // const products = await db.product.findMany({
-      //   where: { active: true },
-      //   include: {
-      //     images: { orderBy: { position: "asc" } },
-      //     attributeGroups: {
-      //       include: { attributes: { include: { images: true } } },
-      //     },
-      //   },
-      // });
+// router.get(
+//   "/products/get-all-active-products",
+//   async (request: express.Request, response: express.Response) => {
+//     try {
+//       console.log("prducts url");
+//       const products = await db.product.findMany({
+//         where: { active: true },
+//         include: {
+//           images: { orderBy: { position: "asc" } },
+//           attributeGroups: {
+//             include: { attributes: { include: { images: true } } },
+//           },
+//         },
+//       });
 
-      return response.status(200).json({ products: "hello" });
-    } catch (error) {
-      console.log(error);
-    }
-  }
-);
+//       return response.status(200).json({ products });
+//     } catch (error) {
+//       console.log(error);
+//     }
+//   }
+// );
 
 router.get(
   "/products/:id",
