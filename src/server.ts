@@ -30,10 +30,11 @@ const userBrandsRoutes = require("./routes/user/brands");
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
 
+app.use(express.static("public"));
+// app.use(express.static(path.join(__dirname, 'build')));
+app.use(cookieParser());
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static("public"));
 app.use(morgan("tiny"));
 
 // app.use(express.static(path.join(__dirname, "/public/")));

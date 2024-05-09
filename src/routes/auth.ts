@@ -55,7 +55,6 @@ passport.use(
             verifiedEmail: true,
           },
         });
-        console.log(user);
         await prisma.$disconnect();
         return cb(null, user);
       }
