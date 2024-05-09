@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "set DEBUG=app  && nodemon ./src/server.ts ",
-    "build": "tsc ",
+    "build": "npx prisma generate && tsc ",
     "debug": "set DEBUG=* && nodemon ./src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -13,7 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@babel/runtime": "^7.22.5",
-    "@prisma/client": "^4.12.0",
+    "@prisma/client": "^4.16.2",
     "@types/stripe-v3": "^3.1.30",
     "body-parser": "^1.20.2",
     "chalk": "4.1.2",

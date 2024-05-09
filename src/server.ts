@@ -1,7 +1,4 @@
 import express = require("express");
-import prisma = require("@prisma/client");
-const db: prisma.PrismaClient = require("./lib/prisma.server");
-
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const session = require("cookie-session");
@@ -57,23 +54,8 @@ app.use(
     origin: [process.env.ORIGIN_URL!],
   })
 );
-app.get("/", async (request: express.Request, response: express.Response) => {
-  try {
-    console.log("prducts url");
-    const products = await db.product.findMany({
-      where: { active: true },
-      include: {
-        images: { orderBy: { position: "asc" } },
-        attributeGroups: {
-          include: { attributes: { include: { images: true } } },
-        },
-      },
-    });
-
-    return response.status(200).json({ products });
-  } catch (error) {
-    console.log(error);
-  }
+app.get("/", (request: express.Request, response: express.Response) => {
+  return response.send("hello world");
 });
 
 app.use("/", authRoutes);
