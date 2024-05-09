@@ -23,7 +23,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      callbackURL: "http://localhost:4000/auth/google/callback",
+      callbackURL: "https://txzira-ecommerce.netlify.app/auth/google/callback",
       passReqToCallback: true,
     },
     async function (
@@ -191,7 +191,9 @@ router.get(
 );
 
 router.get("/auth/google/callback", googleAuth(), (req: any, res: any) => {
-  res.status(200).redirect("http://localhost:4200/auth/login-redirect");
+  res
+    .status(200)
+    .redirect("https://txzira-ecommerce.netlify.app/auth/login-redirect");
   res.end();
 });
 
