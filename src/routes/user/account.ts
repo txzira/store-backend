@@ -11,7 +11,7 @@ router.get(
   "/account-information",
   [auth.isLoggedIn(), auth.checkCSRFToken()],
   async (request: express.Request | any, response: express.Response) => {
-    const user = request.session.passport.user;
+    const user = request.user;
     try {
       const account = await prisma.user.findFirst({
         where: { id: user.id },
@@ -37,7 +37,7 @@ router.get(
   "/account-orders",
   [auth.isLoggedIn(), auth.checkCSRFToken()],
   async (request: express.Request | any, response: express.Response) => {
-    const user = request.session.passport.user;
+    const user = request.user;
     try {
       const orders = await prisma.order.findMany({
         where: { customerId: user.id },

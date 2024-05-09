@@ -114,7 +114,7 @@ router.post(
       requestCart,
     }: { requestShippingForm: any; requestCart: any } = request.body;
     try {
-      const user = request.session.passport.user;
+      const user = request.user;
 
       const shippingAddress = await prisma.orderShippingAddress.create({
         data: {
