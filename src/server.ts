@@ -9,7 +9,7 @@ const chalk = require("chalk");
 const debug = require("debug")("app");
 const morgan = require("morgan");
 import cors from "cors";
-const authRoutes = require("./routes/auth.ts");
+const authRoutes = require("./routes/auth");
 
 const adminProductRoutes = require("./routes/admin/products");
 const adminCategoriesRoutes = require("./routes/admin/categories");
