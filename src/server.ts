@@ -31,6 +31,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const app = express();
 
 app.use(express.static("public"));
+app.set("trust proxy", 1);
 // app.use(express.static(path.join(__dirname, 'build')));
 app.use(cookieParser());
 app.use(bodyParser.json({ limit: "50mb" }));
