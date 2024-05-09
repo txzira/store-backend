@@ -54,8 +54,8 @@ app.use(
     origin: [process.env.ORIGIN_URL!],
   })
 );
-app.get("/", () => {
-  console.log("helloworld");
+app.get("/", (request: express.Request, response: express.Response) => {
+  return response.send("hello world");
 });
 
 app.use("/", authRoutes);
