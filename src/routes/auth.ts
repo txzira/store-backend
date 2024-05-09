@@ -147,6 +147,7 @@ const googleAuth = () => {
         failureRedirect: "auth/failure",
       },
       (error: any, user: any, info: any) => {
+        console.log(error);
         console.log(user);
         if (error) res.status(400).json({ success: false, message: error });
         req.login(user, function (error: any) {
