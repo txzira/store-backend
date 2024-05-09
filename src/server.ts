@@ -9,6 +9,7 @@ const chalk = require("chalk");
 const debug = require("debug")("app");
 const morgan = require("morgan");
 import cors from "cors";
+import { hostname } from "os";
 const authRoutes = require("./routes/auth");
 
 const adminProductRoutes = require("./routes/admin/products");
@@ -24,7 +25,7 @@ const userUsersRoutes = require("./routes/user/users");
 const userAccountRoutes = require("./routes/user/account");
 const userBrandsRoutes = require("./routes/user/brands");
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const app = express();
 
 app.use(bodyParser.json({ limit: "50mb" }));
@@ -68,6 +69,6 @@ app.use("/", userUsersRoutes);
 app.use("/", userAccountRoutes);
 app.use("/", userBrandsRoutes);
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   debug(`Listening on port ${chalk.red(PORT)}`);
 });
