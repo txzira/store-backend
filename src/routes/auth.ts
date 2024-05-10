@@ -109,8 +109,9 @@ passport.serializeUser(function (user: any, done: any) {
 });
 
 passport.deserializeUser(function (user: any, done: any) {
+  console.log("deserialize1", user);
   process.nextTick(function () {
-    console.log("deserialize", user);
+    console.log("deserialize2", user);
     done(null, user);
   });
 });
@@ -236,7 +237,6 @@ router.get(
 
 router.post("/auth/login", localAuth(), (req: any, res: any) => {
   const sessionUser = req.user;
-  console.log(sessionUser);
   res.status(200).json({
     message: "success",
     user: { name: sessionUser.name, email: sessionUser.email },
