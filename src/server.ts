@@ -36,12 +36,13 @@ app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(morgan("tiny"));
 
+app.set("trust proxy", 1);
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: false,
-    cookie: { maxAge: 3600000, secure: false },
+    saveUninitialized: true,
+    cookie: { maxAge: 3600000, secure: true, sameSite: "none" },
   })
 );
 
