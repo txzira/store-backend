@@ -105,6 +105,7 @@ passport.serializeUser(function (user: any, done: any) {
 
 passport.deserializeUser(function (user: any, done: any) {
   process.nextTick(function () {
+    console.log("deserialize", user);
     done(null, user);
   });
 });
