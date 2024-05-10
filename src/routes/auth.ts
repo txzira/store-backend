@@ -79,12 +79,7 @@ passport.use(
       //check password
       if (validatePassword(password, user.password, user.salt)) {
         // correct password
-        return cb(null, {
-          id: user.id,
-          name: `${user.firstName} ${user.lastName}`,
-          email: user.email,
-          role: user.role,
-        });
+        return cb(null, user);
       } else {
         // incorrect password
 
