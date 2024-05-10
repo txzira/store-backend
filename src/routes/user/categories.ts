@@ -24,7 +24,7 @@ router.get(
   async (request: express.Request, response: express.Response) => {
     try {
       const categories = await db.category.findMany({
-        where: { parentId: null },
+        where: { parentId: null, product: { some: { active: true } } },
       });
       return response.status(200).json(categories);
     } catch (error) {
