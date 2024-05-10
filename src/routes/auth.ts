@@ -168,7 +168,8 @@ const googleAuth = () => {
 
 const checkCSRFToken = () => {
   return (req: any, res: any, next: any) => {
-    req.session.csrfToken === req.cookies.CSRF_Token
+    console.log(req);
+    req.csrfToken === req.cookies.CSRF_Token
       ? next()
       : res.status(401).send(false);
   };
