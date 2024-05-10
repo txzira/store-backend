@@ -173,8 +173,9 @@ const checkCSRFToken = () => {
 };
 
 const isLoggedIn = () => {
-  return (request: any, response: any, next: any) => {
-    console.log(request.user);
+  return (request: express.Request, response: any, next: any) => {
+    console.log("is loggedin", request.user);
+    console.log(request.isAuthenticated());
     request.user && request.isAuthenticated()
       ? next()
       : response.status(401).send(false);
@@ -209,7 +210,7 @@ router.get(
   "/auth/isauth",
   [isLoggedIn(), checkCSRFToken()],
   (request: any, response: any) => {
-    response.send(true);
+    return response.send(true);
   }
 );
 
