@@ -149,6 +149,7 @@ const googleAuth = () => {
       (error: any, user: any, info: any) => {
         if (error) res.status(400).json({ success: false, message: error });
         req.login(user, function (error: any) {
+          console.log("req.login", user);
           if (error) return next(error);
           generateCSRFToken(req, res);
           next();
@@ -168,7 +169,6 @@ const checkCSRFToken = () => {
 
 const isLoggedIn = () => {
   return (request: express.Request, response: any, next: any) => {
-    console.log("is loggedin", request.user);
     request.user && request.isAuthenticated()
       ? next()
       : response.status(401).send(false);
@@ -228,8 +228,7 @@ router.get(
 
 router.post("/auth/login", localAuth(), (req: any, res: any) => {
   const sessionUser = req.user;
-  console.log("auth/login", req.user);
-  console.log(req.session);
+
   res.status(200).json({
     message: "success",
     user: {
@@ -244,8 +243,8 @@ router.get(
   "/auth/google/redirect",
   googleAuth(),
   (request: any, response: any, next: any) => {
-    console.log(request.user);
     const sessionUser = request.user;
+    console.log(sessionUser);
 
     response.status(200).json({
       message: "success",
