@@ -229,9 +229,13 @@ router.get(
 router.post("/auth/login", localAuth(), (req: any, res: any) => {
   const sessionUser = req.user;
   console.log("auth/login", req.user);
+  console.log(req.session);
   res.status(200).json({
     message: "success",
-    user: { name: sessionUser.name, email: sessionUser.email },
+    user: {
+      name: `${sessionUser.firstName} ${sessionUser.lastName}`,
+      email: sessionUser.email,
+    },
   });
   res.end();
 });

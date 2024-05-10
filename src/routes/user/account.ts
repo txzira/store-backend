@@ -12,6 +12,7 @@ router.get(
   [auth.isLoggedIn(), auth.checkCSRFToken()],
   async (request: express.Request | any, response: express.Response) => {
     const user = request.user;
+    console.log(user);
     try {
       const account = await prisma.user.findFirst({
         where: { id: user.id },
