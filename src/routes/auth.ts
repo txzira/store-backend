@@ -93,7 +93,6 @@ passport.use(
 );
 
 passport.serializeUser(function (user: any, done: any) {
-  console.log(user);
   process.nextTick(function () {
     done(null, {
       id: user.id,
@@ -229,6 +228,7 @@ router.get(
 
 router.post("/auth/login", localAuth(), (req: any, res: any) => {
   const sessionUser = req.user;
+  console.log("auth/login", req.user);
   res.status(200).json({
     message: "success",
     user: { name: sessionUser.name, email: sessionUser.email },
