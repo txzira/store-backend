@@ -168,6 +168,7 @@ const checkCSRFToken = () => {
 
 const isLoggedIn = () => {
   return (request: any, response: any, next: any) => {
+    console.log(request.user);
     request.user && request.isAuthenticated()
       ? next()
       : response.status(401).send(false);
