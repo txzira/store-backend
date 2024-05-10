@@ -93,6 +93,7 @@ passport.use(
 );
 
 passport.serializeUser(function (user: any, done: any) {
+  console.log(user);
   process.nextTick(function () {
     done(null, {
       id: user.id,
@@ -104,9 +105,7 @@ passport.serializeUser(function (user: any, done: any) {
 });
 
 passport.deserializeUser(function (user: any, done: any) {
-  console.log("deserialize1", user);
   process.nextTick(function () {
-    console.log("deserialize2", user);
     done(null, user);
   });
 });
@@ -130,7 +129,6 @@ const localAuth = () => {
         if (error)
           return res.status(400).json({ success: false, message: error });
         req.login(user, function (error: any) {
-          console.log("req.login", user);
           if (error) return next(error);
           generateCSRFToken(req, res);
           next();
@@ -163,7 +161,6 @@ const googleAuth = () => {
 
 const checkCSRFToken = () => {
   return (req: any, res: any, next: any) => {
-    console.log(req);
     req.csrfToken === req.cookies.CSRF_Token
       ? next()
       : res.status(401).send(false);
@@ -173,7 +170,6 @@ const checkCSRFToken = () => {
 const isLoggedIn = () => {
   return (request: express.Request, response: any, next: any) => {
     console.log("is loggedin", request.user);
-    console.log(request.isAuthenticated());
     request.user && request.isAuthenticated()
       ? next()
       : response.status(401).send(false);
@@ -216,7 +212,7 @@ router.get(
   "/auth/isadmin",
   [isLoggedIn(), checkCSRFToken()],
   async (request: any, response: any) => {
-    const sessionUser = request.session.passport.user;
+    const sessionUser = request.user;
     try {
       const admin = await prisma.user.findFirst({
         where: { id: sessionUser.id },
@@ -336,7 +332,6 @@ router.post("/auth/register-user", async (req: any, res: any, next: any) => {
         success: false,
       });
     } else {
-      console.log(error.message);
       res.status(400).json({ message: "Registration Failed.", success: false });
     }
   }
@@ -347,7 +342,7 @@ router.post("/auth/register-user", async (req: any, res: any, next: any) => {
 
 function generateCSRFToken(req: any, res: any): void {
   const token = randomBytes(36).toString("base64");
-  req.session.csrfToken = token;
+  req.csrfToken = token;
   res.cookie("CSRF_Token", token, {
     maxAge: 1000 * 60 * 60,
     httpOnly: true,
