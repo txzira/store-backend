@@ -134,6 +134,7 @@ const localAuth = () => {
         if (error)
           return res.status(400).json({ success: false, message: error });
         req.login(user, function (error: any) {
+          console.log("req.login", user);
           if (error) return next(error);
           generateCSRFToken(req, res);
           next();
