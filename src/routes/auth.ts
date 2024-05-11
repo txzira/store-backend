@@ -24,7 +24,10 @@ passport.use(
       clientID: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       callbackURL:
-        "https://store-backend-v7uo.onrender.com/auth/google/callback",
+        process.env.PRODUCTION_ENVIR === "true"
+          ? "https://store-backend-v7uo.onrender.com/auth/google/callback"
+          : "http://localhost:4000/auth/google/callback",
+
       passReqToCallback: true,
     },
     async function (
@@ -143,13 +146,11 @@ const googleAuth = () => {
       "google",
       {
         scope: ["email", "profile"],
-        successRedirect: "https://txzira-ecommerce.netlify.app/auth/redirect",
-        failureRedirect: "auth/failure",
+        failureRedirect: "https://txzira-ecommerce.netlify.app",
       },
       (error: any, user: any, info: any) => {
         if (error) res.status(400).json({ success: false, message: error });
         req.login(user, function (error: any) {
-          console.log("req.login", user);
           if (error) return next(error);
           generateCSRFToken(req, res);
           next();
@@ -193,9 +194,7 @@ router.get(
 );
 
 router.get("/auth/google/callback", googleAuth(), (req: any, res: any) => {
-  res
-    .status(200)
-    .redirect("https://txzira-ecommerce.netlify.app/auth/login-redirect");
+  res.status(200).redirect(`${process.env.ORIGIN_URL}/auth/login-redirect`);
   res.end();
 });
 
@@ -241,16 +240,13 @@ router.post("/auth/login", localAuth(), (req: any, res: any) => {
 
 router.get(
   "/auth/google/redirect",
-  googleAuth(),
   (request: any, response: any, next: any) => {
     const sessionUser = request.user;
-    console.log(sessionUser);
 
-    response.status(200).json({
+    return response.status(200).json({
       message: "success",
       user: { name: sessionUser.name, email: sessionUser.email },
     });
-    response.end();
   }
 );
 

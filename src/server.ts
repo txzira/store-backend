@@ -11,7 +11,7 @@ const chalk = require("chalk");
 const debug = require("debug")("app");
 const morgan = require("morgan");
 import cors from "cors";
-import { hostname } from "os";
+
 const authRoutes = require("./routes/auth");
 
 const adminProductRoutes = require("./routes/admin/products");
@@ -36,13 +36,18 @@ app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(morgan("tiny"));
 
-app.set("trust proxy", 1);
+// app.set("trust proxy", 1);
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 3600000, secure: true, sameSite: "none" },
+    cookie: {
+      maxAge: 3600000,
+      ...(process.env.PRODUCTION_ENVIR === "true"
+        ? { sameSite: "none", secure: true }
+        : null),
+    },
   })
 );
 
@@ -73,6 +78,6 @@ app.use("/", userUsersRoutes);
 app.use("/", userAccountRoutes);
 app.use("/", userBrandsRoutes);
 
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, () => {
   debug(`Listening on port ${chalk.red(PORT)}`);
 });
