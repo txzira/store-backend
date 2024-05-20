@@ -162,9 +162,15 @@ const googleAuth = () => {
 
 const checkCSRFToken = () => {
   return (req: any, res: any, next: any) => {
-    req.csrfToken === req.cookies.CSRF_Token
-      ? next()
-      : res.status(401).send(false);
+    if (process.env.PRODUCTION_ENVIR === "true") {
+      req.csrfToken === req.cookies.CSRF_Token
+        ? next()
+        : res.status(401).send(false);
+    } else {
+      req.session.csrfToken === req.cookies.CSRF_Token
+        ? next()
+        : res.status(401).send(false);
+    }
   };
 };
 
@@ -341,7 +347,11 @@ router.post("/auth/register-user", async (req: any, res: any, next: any) => {
 
 function generateCSRFToken(req: any, res: any): void {
   const token = randomBytes(36).toString("base64");
-  req.csrfToken = token;
+  if (process.env.PRODUCTION_ENVIR === "true") {
+    req.csrfToken = token;
+  } else {
+    req.session.csrfToken = token;
+  }
   res.cookie("CSRF_Token", token, {
     maxAge: 1000 * 60 * 60,
     httpOnly: true,

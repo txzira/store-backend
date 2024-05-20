@@ -36,7 +36,7 @@ app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(morgan("tiny"));
 
-app.set("trust proxy", 1);
+process.env.PRODUCTION_ENVIR === "true" ? app.set("trust proxy", 1) : null;
 app.use(
   session({
     secret: process.env.SESSION_SECRET,

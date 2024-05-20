@@ -149,7 +149,7 @@ model Product {
   images          ProductImage[]
   categories      Category[]
   productVariants ProductVariant[]
-  attributeGroups AttributeGroup[]
+  attributeGroups AttributeGroup[] 
   cartItem        CartItem[]
   @@index([brandId])
 }
@@ -160,7 +160,7 @@ model ProductVariant {
   price                    Float
   quantity                 Int
   available                Boolean                   @default(true)
-  product                  Product                   @relation(fields: [productId], references: [id])
+  product                  Product                   @relation(fields: [productId], references: [id],onDelete: Cascade)
   cartItems                CartItem[]
   productVariantAttributes ProductVariantAttribute[]
   variantImages            ProductVariantImage[]
@@ -175,8 +175,8 @@ model ProductVariantAttribute {
   attibuteGroupId  Int
   attributeId      Int
   productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
-  attributeGroup   AttributeGroup @relation(fields: [attibuteGroupId], references: [id])
-  attribute        Attribute      @relation(fields: [attributeId], references: [id])
+  attributeGroup   AttributeGroup @relation(fields: [attibuteGroupId], references: [id],onDelete: Cascade)
+  attribute        Attribute      @relation(fields: [attributeId], references: [id],onDelete: Cascade)
 
   @@unique([productVariantId, attibuteGroupId, attributeId])
   @@index([productVariantId])
@@ -188,7 +188,7 @@ model AttributeGroup {
   id                       Int                       @id @default(autoincrement())
   name                     String                    
   productId                Int
-  product                  Product                   @relation(fields: [productId], references: [id])
+  product                  Product                   @relation(fields: [productId], references: [id], onDelete: Cascade)
   attributes               Attribute[]
   productVariantAttributes ProductVariantAttribute[]
   @@unique([name,productId])
@@ -211,7 +211,7 @@ model ProductImage {
   url       String
   publicId  String
   productId Int     
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id],onDelete: Cascade)
   position Int
 
   @@index([productId])
@@ -222,7 +222,7 @@ model AttributeImage {
   url         String
   publicId    String
   attributeId Int
-  attribute   Attribute @relation(fields: [attributeId], references: [id])
+  attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
   position Int
   @@index([attributeId])
 }

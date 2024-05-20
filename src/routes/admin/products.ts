@@ -36,13 +36,19 @@ router.post(
       const product = request.body.product;
       const productImages = request.body.productImages;
 
+      const categories = [];
+
+      for (let i = 0; i < product.categories.length; i++) {
+        categories.push({ id: product.categories[i] });
+      }
+
       const dbProduct = await db.product.create({
         data: {
           name: product.name,
           slug: product.slug,
           sku: product.sku,
           quantity: product.stock,
-
+          categories: { connect: categories },
           active: product.active,
           ...(product.brand ? { brandId: product.brand } : 0),
 
@@ -118,7 +124,7 @@ router.post(
           slug: product.slug,
           sku: product.sku,
           quantity: product.stock,
-          categories: { connect: categories },
+          categories: { set: [], connect: categories },
           active: product.active,
           ...(product.brand
             ? { brandId: product.brand }
@@ -180,7 +186,7 @@ router.post(
 
       for (let i = 0; i < attributeGroups.length; i++) {
         await db.attributeGroup.upsert({
-          where: { id: attributeGroups[i].id },
+          where: { id: attributeGroups[i].id ? attributeGroups[i].id : 0 },
           create: {
             name: attributeGroups[i].name,
             product: { connect: { id: Number(productId) } },
@@ -197,9 +203,9 @@ router.post(
             attributes: {
               upsert: attributeGroups[i].attributes.map((attribute: any) => {
                 return {
-                  where: { id: attribute.id },
+                  where: { id: attribute.id ? attribute.id : 0 },
                   create: { name: attribute.name },
-                  update: {},
+                  update: { name: attribute.name },
                 };
               }),
             },
@@ -209,7 +215,7 @@ router.post(
       for (let i = 0; i < attributesToDelete.length; i++) {
         await db.attribute.delete({
           where: {
-            id: attributesToDelete[i].id,
+            id: attributesToDelete[i].id ? attributesToDelete[i].id : 0,
           },
         });
       }
@@ -225,6 +231,45 @@ router.post(
   async (request: express.Request, response: express.Response) => {
     try {
       const productId = request.body.productId;
+      const attributeGroups = request.body.attributeGroups;
+      const attributesToDelete = request.body.attributesToDelete;
+      //Save attribute groups changes
+      for (let i = 0; i < attributeGroups.length; i++) {
+        await db.attributeGroup.upsert({
+          where: { id: attributeGroups[i].id ? attributeGroups[i].id : 0 },
+          create: {
+            name: attributeGroups[i].name,
+            product: { connect: { id: Number(productId) } },
+            attributes: {
+              createMany: {
+                data: attributeGroups[i].attributes.map((attribute: any) => {
+                  return { name: attribute.name };
+                }),
+              },
+            },
+          },
+          update: {
+            name: attributeGroups[i].name,
+            attributes: {
+              upsert: attributeGroups[i].attributes.map((attribute: any) => {
+                return {
+                  where: { id: attribute.id ? attribute.id : 0 },
+                  create: { name: attribute.name },
+                  update: { name: attribute.name },
+                };
+              }),
+            },
+          },
+        });
+      }
+      for (let i = 0; i < attributesToDelete.length; i++) {
+        await db.attribute.delete({
+          where: {
+            id: attributesToDelete[i].id ? attributesToDelete[i].id : 0,
+          },
+        });
+      }
+      //Generate variants
       const product = await db.product.findUnique({
         where: { id: Number(productId) },
         include: {
