@@ -144,6 +144,8 @@ model Product {
   description     String?
   slug            String?              @unique
   active          Boolean              @default(true)
+  available       Boolean              @default(false)
+  managedStock    Boolean              @default(false)
   brand           Brand? @relation(fields: [brandId],references: [id])
   brandId         Int? 
   images          ProductImage[]
