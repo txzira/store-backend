@@ -142,7 +142,7 @@ model Product {
   sku             String?
   quantity        Int?
   description     String?
-  slug            String?              @unique
+  slug            String              @unique
   active          Boolean              @default(true)
   available       Boolean              @default(false)
   managedStock    Boolean              @default(false)
@@ -153,6 +153,7 @@ model Product {
   productVariants ProductVariant[]
   attributeGroups AttributeGroup[] 
   cartItem        CartItem[]
+  createdAt       DateTime     @default(now())
   @@index([brandId])
 }
 

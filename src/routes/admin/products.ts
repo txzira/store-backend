@@ -338,7 +338,7 @@ router.post(
 
       function makeCombinations(arr: any) {
         const startArray = arr;
-        const combinations = [];
+        let combinations = [];
 
         for (let x = 0; x < startArray.length; x++) {
           for (
