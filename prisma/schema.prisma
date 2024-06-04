@@ -98,6 +98,8 @@ model Order {
   cart           Cart            @relation(fields: [cartId], references: [id])
   shippingAddressId     Int      @unique
   shippingAddress       OrderShippingAddress @relation(fields: [shippingAddressId], references: [id])
+  shippingMethod ShippingMethod @relation(fields:[shippingMethodId], references: [id], onUpdate: NoAction)
+  shippingMethodId String
   @@index([customerId])
 }
 
@@ -234,6 +236,14 @@ model Brand {
   id Int @id @default(autoincrement())
   name String
   products Product[]
+}
+
+model ShippingMethod {
+  id String @id @default(uuid())
+  name String
+  price Float
+  active Boolean @default(false)
+  orders Order[] 
 }
 
 enum UserRole {

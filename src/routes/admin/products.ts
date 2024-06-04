@@ -33,27 +33,27 @@ router.post(
   [auth.isLoggedIn(), auth.checkCSRFToken(), auth.isAdmin()],
   async (request: express.Request, response: express.Response) => {
     try {
-      const product = request.body.product;
+      const productForm = request.body.productForm;
       const productImages = request.body.productImages;
 
       const categories = [];
 
-      for (let i = 0; i < product.categories.length; i++) {
-        categories.push({ id: product.categories[i] });
+      for (let i = 0; i < productForm.categories.length; i++) {
+        categories.push({ id: productForm.categories[i] });
       }
 
       const dbProduct = await db.product.create({
         data: {
-          name: product.name,
-          slug: product.slug,
-          sku: product.sku,
-          quantity: product.stock,
+          name: productForm.name,
+          slug: productForm.slug,
+          sku: productForm.sku,
+          quantity: productForm.stock,
           categories: { connect: categories },
-          active: product.active,
-          ...(product.brand ? { brandId: product.brand } : 0),
+          active: productForm.active,
+          ...(productForm.brand ? { brandId: productForm.brand } : 0),
 
-          price: product.price,
-          description: product.description,
+          price: productForm.price,
+          description: productForm.description,
         },
       });
 
@@ -78,7 +78,7 @@ router.post(
   }
 );
 
-router.post(
+router.put(
   "/products/edit-product/:id",
   [auth.isLoggedIn(), auth.checkCSRFToken(), auth.isAdmin()],
   async (request: express.Request, response: express.Response) => {

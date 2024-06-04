@@ -19,6 +19,7 @@ const adminCategoriesRoutes = require("./routes/admin/categories");
 const adminBrandsRoutes = require("./routes/admin/brands");
 const adminOrdersRoutes = require("./routes/admin/orders");
 const adminCustomersRoutes = require("./routes/admin/customers");
+const adminShippingMethodRoutes = require("./routes/admin/shippingmethod");
 
 const userCategoriesRoutes = require("./routes/user/categories");
 const userCheckoutRoutes = require("./routes/user/checkout");
@@ -70,6 +71,7 @@ app.use("/admin", adminCategoriesRoutes);
 app.use("/admin", adminBrandsRoutes);
 app.use("/admin", adminOrdersRoutes);
 app.use("/admin", adminCustomersRoutes);
+app.use("/admin", adminShippingMethodRoutes);
 
 app.use("/", userCategoriesRoutes);
 app.use("/", userCheckoutRoutes);

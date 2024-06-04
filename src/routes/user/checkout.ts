@@ -177,22 +177,18 @@ router.post(
         return response.status(500).send("Stripe order error.");
       } else {
         if (error.code === 1234) {
-          return response
-            .status(400)
-            .json({
-              message: error.message,
-              productsNotExist: error.productsNotExist,
-              code: error.code,
-            });
+          return response.status(400).json({
+            message: error.message,
+            productsNotExist: error.productsNotExist,
+            code: error.code,
+          });
         }
         if (error.code === 1235) {
-          return response
-            .status(400)
-            .json({
-              message: error.message,
-              productsNotAvailable: error.productsNotAvailable,
-              code: error.code,
-            });
+          return response.status(400).json({
+            message: error.message,
+            productsNotAvailable: error.productsNotAvailable,
+            code: error.code,
+          });
         }
         return response.status(500).send(error);
       }
@@ -232,6 +228,7 @@ router.post(
           customerEmail: requestShippingForm.email,
           status: "PAYMENT_PENDING",
           shippingAddressId: shippingAddress.id,
+          shippingMethodId: "",
         },
       });
       return response
