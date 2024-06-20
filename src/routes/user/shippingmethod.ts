@@ -7,10 +7,13 @@ const db: prisma.PrismaClient = require("../../lib/prisma.server");
 const router = express.Router();
 
 router.get(
-  "/shipping-method/get-shipping-methods",
+  "/shipping-methods/get-shipping-methods-by-country/:country",
   async (request: express.Request, response: express.Response) => {
     try {
-      const shippingMethods = await db.shippingMethod.findMany();
+      const country = request.params.country;
+      const shippingMethods = await db.shippingMethod.findMany({
+        where: { active: true, countries: { has: country } },
+      });
       response.status(200).json(shippingMethods);
     } catch (error) {
       console.log(error);

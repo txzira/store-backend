@@ -86,20 +86,23 @@ model ProductVariantImage {
 }
 
 model Order {
-  id             Int             @id @default(autoincrement())
-  customerEmail  String
-  amount         Float
-  date           DateTime        @default(now())
-  status        OrderStatus
-  trackingNumber String?
-  customerId     Int?
-  customer       User?           @relation(fields: [customerId], references: [id])
-  cartId         Int             @unique
-  cart           Cart            @relation(fields: [cartId], references: [id])
-  shippingAddressId     Int      @unique
-  shippingAddress       OrderShippingAddress @relation(fields: [shippingAddressId], references: [id])
-  shippingMethod ShippingMethod @relation(fields:[shippingMethodId], references: [id], onUpdate: NoAction)
-  shippingMethodId String
+  id                  Int             @id @default(autoincrement())
+  customerEmail       String
+  taxTotal            Float
+  shippingTotal       Float
+  cartTotal           Float
+  orderTotal          Float
+  date                DateTime        @default(now())
+  status              OrderStatus
+  trackingNumber      String?
+  customerId          Int?
+  customer            User?           @relation(fields: [customerId], references: [id])
+  cartId              Int             @unique
+  cart                Cart            @relation(fields: [cartId], references: [id])
+  shippingAddressId   Int      @unique
+  shippingAddress     OrderShippingAddress @relation(fields: [shippingAddressId], references: [id])
+  shippingMethod      ShippingMethod @relation(fields:[shippingMethodId], references: [id], onUpdate: NoAction)
+  shippingMethodId    String
   @@index([customerId])
 }
 
@@ -150,6 +153,7 @@ model Product {
   managedStock    Boolean              @default(false)
   brand           Brand? @relation(fields: [brandId],references: [id])
   brandId         Int? 
+  taxCode         String              @default("")              
   images          ProductImage[]
   categories      Category[]
   productVariants ProductVariant[]
@@ -242,12 +246,15 @@ model ShippingMethod {
   id String @id @default(uuid())
   name String
   price Float
+  countries String[]
+  stripeShippingId String
   active Boolean @default(false)
   orders Order[] 
 }
 
 enum UserRole {
   ADMIN
+  GUESTADMIN
   CUSTOMER
 }
 

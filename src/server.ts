@@ -27,6 +27,7 @@ const userProductsRoutes = require("./routes/user/products");
 const userUsersRoutes = require("./routes/user/users");
 const userAccountRoutes = require("./routes/user/account");
 const userBrandsRoutes = require("./routes/user/brands");
+const userShippingMethodRoutes = require("./routes/user/shippingmethod");
 
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
@@ -79,6 +80,7 @@ app.use("/", userProductsRoutes);
 app.use("/", userUsersRoutes);
 app.use("/", userAccountRoutes);
 app.use("/", userBrandsRoutes);
+app.use("/", userShippingMethodRoutes);
 
 app.listen(PORT, () => {
   debug(`Listening on port ${chalk.red(PORT)}`);

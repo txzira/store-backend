@@ -35,9 +35,52 @@ router.get(
 );
 
 router.get(
+  "/account-initial-orders",
+  [auth.isLoggedIn(), auth.checkCSRFToken()],
+  async (request: express.Request | any, response: express.Response) => {
+    const limit = Number(request.query.limit);
+
+    const user = request.user;
+    try {
+      const orders = await prisma.$transaction([
+        prisma.order.count({ where: { customerId: user.id } }),
+        prisma.order.findMany({
+          where: { customerId: user.id },
+          include: {
+            cart: {
+              include: {
+                cartItems: {
+                  include: {
+                    variant: { select: { variantImages: true } },
+                    product: { select: { images: { select: { url: true } } } },
+                  },
+                },
+              },
+            },
+            shippingAddress: true,
+          },
+          take: limit,
+          skip: 0,
+          orderBy: { date: "desc" },
+        }),
+      ]);
+      console.log(orders);
+      return response.status(200).json({ message: "Success", orders });
+    } catch (error: any) {
+      return response
+        .status(400)
+        .json({ message: "Failed", error: error.message });
+    }
+  }
+);
+router.get(
   "/account-orders",
   [auth.isLoggedIn(), auth.checkCSRFToken()],
   async (request: express.Request | any, response: express.Response) => {
+    const page = Number(request.query.page) - 1;
+    const limit = Number(request.query.limit);
+    console.log({ page, limit });
+
     const user = request.user;
     try {
       const orders = await prisma.order.findMany({
@@ -55,7 +98,12 @@ router.get(
           },
           shippingAddress: true,
         },
+        take: limit,
+        skip: limit * page,
+        orderBy: { date: "desc" },
       });
+
+      console.log(orders);
       return response.status(200).json({ message: "Success", orders });
     } catch (error: any) {
       return response
