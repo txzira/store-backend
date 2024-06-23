@@ -36,6 +36,8 @@
 // module.exports.SendEmail = SendEmail;
 
 import nodemailer = require("nodemailer");
+import db = require("@prisma/client");
+const prisma = new db.PrismaClient();
 
 var transporter = nodemailer.createTransport({
   service: "gmail",
@@ -45,15 +47,21 @@ var transporter = nodemailer.createTransport({
   },
 });
 
-function SendEmail(toEmail: any, toName: any, subject: any, htmlPart: any) {
+function sendEmail(toEmail: any, toName: any, subject: any, htmlPart: any) {
   var mailOptions = {
     from: process.env.GMAILNODEMAILER_EMAIL,
     to: `"${toName}" <${toEmail}>`,
     subject: subject,
     html: htmlPart,
+    // attachments: [
+    //   {
+    //     filename: "logo.png",
+    //     path: __dirname + "/../images/pseudo-corp.png",
+    //     cid: "logoimage",
+    //   },
+    // ],
   };
 
-  console.log(process.env.GMAILNODEMAILER_EMAIL);
   transporter.sendMail(mailOptions, function (error, info) {
     if (error) {
       console.log(error);
@@ -63,4 +71,4 @@ function SendEmail(toEmail: any, toName: any, subject: any, htmlPart: any) {
   });
 }
 
-module.exports = SendEmail;
+module.exports.sendEmail = sendEmail;

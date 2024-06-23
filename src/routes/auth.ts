@@ -7,7 +7,7 @@ import GoogleStrategy = require("passport-google-oauth2");
 import LocalStrategy = require("passport-local");
 import { randomBytes } from "crypto";
 
-const SendEmail = require("../lib/nodemailer");
+const nodemailer = require("../lib/nodemailer");
 import jwt = require("jsonwebtoken");
 import { URL } from "url";
 
@@ -319,7 +319,7 @@ router.post("/auth/register-user", async (req: any, res: any, next: any) => {
     link.search = new URLSearchParams({ token: token }).toString();
     const message = `<div>Email verification link will expire in 24 hours.</div></br><div>To verify your email copy and paste, or click the link below: </div></br><div>${link}</div>`;
 
-    SendEmail(
+    nodemailer.sendEmail(
       user.email,
       user.firstName + " " + user.lastName,
       "Email Verification Link",
@@ -342,6 +342,177 @@ router.post("/auth/register-user", async (req: any, res: any, next: any) => {
   }
   res.end();
 });
+
+router.post(
+  "/auth/forgot-password",
+  async (request: express.Request, response: express.Response) => {
+    try {
+      const email = request.body.email;
+      const hours = 3;
+      const expiration_date = new Date(Date.now() + 60 * 60 * hours * 1000);
+      // Find user given email
+      const user = await prisma.user.findUnique({ where: { email: email } });
+
+      // if user exist send email verification
+      // else user doesnt exist, do nothing
+      if (user) {
+        const token = await prisma.token.create({
+          data: {
+            user_id: user.id,
+            expir_at: expiration_date,
+            token_type: "PASSWORD_RESET",
+          },
+          select: {
+            id: true,
+            user_id: true,
+            user: { select: { firstName: true } },
+          },
+        });
+
+        const link = new URL(`${process.env.ORIGIN_URL}/auth/reset-password`);
+        link.searchParams.append("userId", token.user_id.toString());
+        link.searchParams.append("tokenId", token.id);
+
+        const htmlPart = `
+          <div style="width:50%; margin:0 auto; color:black;">
+            <div style="text-align:center;">
+              <img width="550px" height="75px" src="${process.env.COMPANY_LOGO} "/>
+            </div>
+            <h2 style="color: red; text-align:center;">Forgot Your Password?</h2>
+            <p>Hello ${token.user.firstName},</p>
+            <br/>
+            <p>We have received a request to change your password on ${process.env.COMPANY_NAME}.</p>
+            <p>Click <a href='${link.href}'>here</a> to reset your password. This link is valid for three hours.</p>
+            <p>If you didn't request a password change or you remember your password, you can ignore this message and continue to use your current password.</p>
+            <br/>
+            <p>-Your favorite shreders at ${process.env.COMPANY_NAME}</p>
+          </div>
+        `;
+
+        const subject = `Request to reset ${token.user.firstName}'s Password - ${process.env.COMPANY_NAME}`;
+        await nodemailer.sendEmail(
+          email,
+          `${user.firstName} ${user.lastName}`,
+          subject,
+          htmlPart
+        );
+      }
+      return response.status(200).json({ message: "success" });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+);
+
+router.post(
+  "/auth/verify-password-reset",
+  async (request: express.Request, response: express.Response) => {
+    try {
+      const userId = Number(request.body.userId);
+      const tokenId = request.body.tokenId;
+
+      if (isNaN(userId) || !tokenId) {
+        // error
+        return response.status(406).send({ validLink: false });
+      } else {
+        const token = await prisma.token.findUnique({
+          where: { id: tokenId, user_id: userId },
+        });
+
+        if (token) {
+          if (new Date(Date.now()) <= token.expir_at) {
+            //token not expired continue...
+            return response.status(200).send({ validLink: true });
+          } else {
+            //token expired delete from database
+            await prisma.token.delete({
+              where: { id: token.id, user_id: token.user_id },
+            });
+            return response.status(403).send({ validLink: false });
+          }
+        } else {
+          // invalid token - token does not exist
+          console.log("hello");
+          return response.status(401).send({ validLink: false });
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      return response.status(500).send({ validLink: false });
+    }
+  }
+);
+
+router.post(
+  "/auth/reset-password",
+  async (request: express.Request, response: express.Response) => {
+    const { newPassword, tokenId } = request.body;
+    const userId = Number(request.body.userId);
+
+    if (isNaN(userId) || !tokenId) {
+      // error
+      return response.status(406).send({ message: "Invalid Credentials." });
+    } else {
+      console.log({ newPassword, userId, tokenId });
+      const token = await prisma.token.findUnique({
+        where: { id: tokenId, user_id: userId },
+        select: {
+          id: true,
+          user_id: true,
+          expir_at: true,
+          user: { select: { firstName: true, lastName: true, email: true } },
+        },
+      });
+
+      if (token) {
+        if (new Date(Date.now()) <= token.expir_at) {
+          //token not expired continue...
+          const saltHash = genPassword(newPassword);
+          const salt = saltHash.salt;
+          const hash = saltHash.hash;
+          await prisma.user.update({
+            where: { id: userId },
+            data: { salt, password: hash },
+          });
+          await prisma.token.delete({ where: { id: token.id } });
+
+          const htmlPart = `
+          <div style="width:50%; margin:0 auto; color:black;">
+            <div style="text-align:center;">
+              <img width="550px" height="75px" src="${process.env.COMPANY_LOGO} "/>
+            </div>
+            <p>Hello ${token.user.firstName},</p>
+            <br/>
+            <p>Your request to change your password on ${process.env.COMPANY_NAME} was successful.</p>
+            <br/>
+            <p>-Your favorite shreders at ${process.env.COMPANY_NAME}</p>
+          </div>
+        `;
+
+          const subject = `Password Reset Successful - ${process.env.COMPANY_NAME}`;
+
+          await nodemailer.sendEmail(
+            token.user.email,
+            `${token.user.firstName} ${token.user.lastName}`,
+            subject,
+            htmlPart
+          );
+
+          return response.status(200).send({ status: true });
+        } else {
+          //token expired delete from database
+          await prisma.token.delete({
+            where: { id: token.id, user_id: token.user_id },
+          });
+          return response.status(403).send({ message: "Token has expired." });
+        }
+      } else {
+        // invalid token - token does not exist
+        return response.status(401).send({ message: "Invalid Credentials." });
+      }
+    }
+  }
+);
 
 // Helper Functions
 
