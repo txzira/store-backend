@@ -12,35 +12,35 @@ router.get(
   "/products/get-all-active-products",
   async (request: express.Request, response: express.Response) => {
     try {
-      const supaProducts = await pool.query(
-        `SELECT p.*, json_agg(json_build_object(
-          \'id\',i.id,
-          \'url\',i.url,
-          \'productId\',i."productId",
-          \'position\',i.position
-        )) as images,
-        json_agg(json_build_object(
-          \'id\',a.id,
-          \'name\',a.name
-        )) as "attributeGroups"
-        FROM "Product" p LEFT JOIN "ProductImage" i ON p.id=i."productId" LEFT OUTER JOIN "AttributeGroup" a ON p.id=a."productId"  WHERE active=true GROUP BY p.id ORDER BY "createdAt" ASC`
-      );
+      // const supaProducts = await pool.query(
+      //   `SELECT p.*, json_agg(json_build_object(
+      //     \'id\',i.id,
+      //     \'url\',i.url,
+      //     \'productId\',i."productId",
+      //     \'position\',i.position
+      //   )) as images,
+      //   json_agg(json_build_object(
+      //     \'id\',a.id,
+      //     \'name\',a.name
+      //   )) as "attributeGroups"
+      //   FROM "Product" p LEFT JOIN "ProductImage" i ON p.id=i."productId" LEFT OUTER JOIN "AttributeGroup" a ON p.id=a."productId"  WHERE active=true GROUP BY p.id ORDER BY "createdAt" ASC`
+      // );
 
-      const testQuery = await pool.query(`WITH "Images" AS (
-        SELECT "productId",json_agg(json_build_object(\'url\',url)) as urls
-        FROM "ProductImage" 
-        GROUP BY "productId"
-      ),"AttrGroups" AS (
-        SELECT "productId", json_agg(json_build_object(\'name\',name)) as attribute_groups
-        FROM "AttributeGroup"
-        GROUP BY "productId"
-      ) 
-      SELECT p.* FROM "Product" p 
-      LEFT JOIN "Images" ON "Images"."productId"=p.id
-      LEFT JOIN "AttrGroups" ON "AttrGroups"."productId"=p.id
-      WHERE active=true
-      `);
-      console.log(testQuery.rows);
+      // const testQuery = await pool.query(`WITH "Images" AS (
+      //   SELECT "productId",json_agg(json_build_object(\'url\',url)) as urls
+      //   FROM "ProductImage"
+      //   GROUP BY "productId"
+      // ),"AttrGroups" AS (
+      //   SELECT "productId", json_agg(json_build_object(\'name\',name)) as attribute_groups
+      //   FROM "AttributeGroup"
+      //   GROUP BY "productId"
+      // )
+      // SELECT p.* FROM "Product" p
+      // LEFT JOIN "Images" ON "Images"."productId"=p.id
+      // LEFT JOIN "AttrGroups" ON "AttrGroups"."productId"=p.id
+      // WHERE active=true
+      // `);
+      // console.log(testQuery.rows);
       // const supaProducts = await pool.query(
       //   `SELECT json_build_object(
       //       \'url\',p.id,
@@ -80,7 +80,7 @@ router.get(
         },
         orderBy: { createdAt: "asc" },
       });
-      console.log(products[9]);
+      // console.log(products[9]);
 
       return response.status(200).json(products);
     } catch (error) {
