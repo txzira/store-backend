@@ -124,9 +124,18 @@ const localAuth = () => {
       },
       (error: any, user: any, info: any) => {
         if (user === false) {
-          return res
-            .status(400)
-            .json({ success: false, message: "Invalid Password." });
+          return res.status(400).json({
+            success: false,
+            message: "Invalid Password.",
+            state: "invalid",
+          });
+        }
+        if (!user.verifiedEmail) {
+          return res.status(400).json({
+            success: false,
+            message: "Email not verified.",
+            state: "unverified",
+          });
         }
         if (error)
           return res.status(400).json({ success: false, message: error });
@@ -240,6 +249,7 @@ router.post("/auth/login", localAuth(), (req: any, res: any) => {
       name: `${sessionUser.firstName} ${sessionUser.lastName}`,
       email: sessionUser.email,
     },
+    state: "verified",
   });
   res.end();
 });
@@ -267,37 +277,117 @@ router.get("/auth/logout", (req: any, res: any, next: any) => {
   });
 });
 
-router.get("/auth/verify", async (req: any, res: any, next: any) => {
-  const token = req.query.token;
-  try {
-    var decodedUser: any = jwt.verify(token, process.env.JWT_SECRET!);
-    const user = await prisma.user.findUnique({
-      where: { email: decodedUser.user },
-    });
-    if (user) {
-      if (user.verifiedEmail) {
-        res
-          .status(400)
-          .json({ success: false, message: "Email already verified." });
+router.put(
+  "/auth/verify-email",
+  async (request: any, response: any, next: any) => {
+    try {
+      const { userId, tokenId } = request.body;
+      console.log({ userId, tokenId });
+      if (isNaN(userId) || !tokenId) {
+        // error
+        return response.status(406).send({ validLink: false });
       } else {
-        await prisma.user.update({
-          where: { email: decodedUser.user },
-          data: { verifiedEmail: true },
+        const token = await prisma.token.findUnique({
+          where: { id: tokenId, user_id: Number(userId) },
         });
-        res.status(200).json({ success: true, message: "success" });
+
+        if (token) {
+          if (new Date(Date.now()) <= token.expir_at) {
+            //token not expired continue...
+            //set verifiedEmail of user to true
+            await prisma.user.update({
+              where: { id: token.user_id },
+              data: { verifiedEmail: true },
+            });
+            await prisma.token.deleteMany({
+              where: {
+                user_id: token.user_id,
+                token_type: "EMAIL_VERIFICATION",
+              },
+            });
+            return response.status(200).send({ validLink: true });
+          } else {
+            //token expired delete from database
+            await prisma.token.delete({
+              where: { id: token.id, user_id: token.user_id },
+            });
+            return response.status(403).send({ validLink: false });
+          }
+        } else {
+          // invalid token - token does not exist
+          return response.status(401).send({ validLink: false });
+        }
       }
-    } else {
-      res.status(400).json({ success: false, message: "User does not exist." });
+    } catch (err) {
+      console.log(err);
+      return response
+        .status(400)
+        .json({ success: false, message: "Email verification link expired!" });
     }
-  } catch (err) {
-    res
-      .status(400)
-      .json({ success: false, message: "Email verification link expired!" });
   }
-  res.end();
-});
+);
+
+router.put(
+  "/auth/resend-email-verification",
+  async (request: express.Request, response: express.Response) => {
+    try {
+      const email = request.body.email;
+
+      const hours = 3;
+      const expiration_date = new Date(Date.now() + 60 * 60 * hours * 1000);
+
+      await prisma.token.deleteMany({
+        where: { user: { email }, token_type: "EMAIL_VERIFICATION" },
+      });
+
+      const token = await prisma.token.create({
+        data: {
+          user: { connect: { email: email } },
+          expir_at: expiration_date,
+          token_type: "EMAIL_VERIFICATION",
+        },
+        select: {
+          id: true,
+          user_id: true,
+          user: { select: { firstName: true, lastName: true } },
+        },
+      });
+      const link = new URL(`${process.env.ORIGIN_URL}/auth/verify/`);
+
+      link.searchParams.append("userId", token.user_id.toString());
+      link.searchParams.append("tokenId", token.id);
+
+      const htmlPart = `
+      <div style="width:50%; margin:0 auto; color:black;">
+        <div style="text-align:center;">
+          <img width="550px" height="75px" src="${process.env.COMPANY_LOGO} "/>
+        </div>
+        <h2 style="text-align:center;">Email Verification</h2>
+        <p>Hello ${token.user.firstName},</p>
+        <br/>
+        <p>Thank you for creating an account with us. Before you login we need you to verify your email to make sure you created this account. To verif your email copy and paste, or click the link below:</p>
+        <p>${link.href}</p> 
+        <p> Email verification link will expire in 3 hours.</p>
+        <br/>
+        <p>-Your favorite shreders at ${process.env.COMPANY_NAME}</p>
+      </div>`;
+
+      const subject = `Email Verification Link - ${process.env.COMPANY_NAME}`;
+      nodemailer.sendEmail(
+        email,
+        token.user.firstName + " " + token.user.lastName,
+        subject,
+        htmlPart
+      );
+      return response.status(200).json({ status: "success" });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+);
 
 router.post("/auth/register-user", async (req: any, res: any, next: any) => {
+  const email = req.body.email;
   try {
     const saltHash = genPassword(req.body.password);
     const salt = saltHash.salt;
@@ -305,39 +395,90 @@ router.post("/auth/register-user", async (req: any, res: any, next: any) => {
 
     const user = await prisma.user.create({
       data: {
-        email: req.body.email,
+        email: email,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         password: hash,
         salt: salt,
       },
     });
-    const token = jwt.sign({ user: user.email }, process.env.JWT_SECRET!, {
-      expiresIn: 60 * 60 * 3,
-    });
-    const link = new URL(`${process.env.ORIGIN_URL}/auth/verify/`);
-    link.search = new URLSearchParams({ token: token }).toString();
-    const message = `<div>Email verification link will expire in 24 hours.</div></br><div>To verify your email copy and paste, or click the link below: </div></br><div>${link}</div>`;
 
-    nodemailer.sendEmail(
-      user.email,
-      user.firstName + " " + user.lastName,
-      "Email Verification Link",
-      message
-    );
+    if (user) {
+      const hours = 3;
+      const expiration_date = new Date(Date.now() + 60 * 60 * hours * 1000);
 
-    res.status(200).json({
-      message: `Registration Successful. Email verification was sent to ${user.email} and is only valid for 3hours, unverified accounts are subject to deletion after this period.`,
-      success: true,
-    });
+      const token = await prisma.token.create({
+        data: {
+          user_id: user.id,
+          expir_at: expiration_date,
+          token_type: "EMAIL_VERIFICATION",
+        },
+        select: {
+          id: true,
+          user_id: true,
+          user: { select: { firstName: true } },
+        },
+      });
+      const link = new URL(`${process.env.ORIGIN_URL}/auth/verify/`);
+
+      link.searchParams.append("userId", token.user_id.toString());
+      link.searchParams.append("tokenId", token.id);
+
+      const htmlPart = `
+      <div style="width:50%; margin:0 auto; color:black;">
+        <div style="text-align:center;">
+          <img width="550px" height="75px" src="${process.env.COMPANY_LOGO} "/>
+        </div>
+        <h2 style="text-align:center;">Email Verification</h2>
+        <p>Hello ${token.user.firstName},</p>
+        <br/>
+        <p>Thank you for creating an account with us. Before you login we need you to verify your email to make sure you created this account. To verif your email copy and paste, or click the link below:</p>
+        <p>${link.href}</p> 
+        <p> Email verification link will expire in 3 hours.</p>
+        <br/>
+        <p>-Your favorite shreders at ${process.env.COMPANY_NAME}</p>
+      </div>`;
+
+      const subject = `Email Verification Link - ${process.env.COMPANY_NAME}`;
+      nodemailer.sendEmail(
+        user.email,
+        user.firstName + " " + user.lastName,
+        subject,
+        htmlPart
+      );
+
+      res.status(200).json({
+        message: `Registration Successful. Email verification was sent to ${user.email} and is only valid for 3hours, unverified accounts are subject to deletion after this period.`,
+        success: true,
+        state: "success",
+      });
+    }
   } catch (error: any) {
     if (error.code === "P2002") {
-      res.status(400).json({
-        message: "Registration Failed. User already exists.",
-        success: false,
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: { verifiedEmail: true },
       });
+
+      if (user?.verifiedEmail) {
+        res.status(400).json({
+          message: "Registration Failed. User already exists.",
+          success: false,
+          state: "verified",
+        });
+      } else {
+        res.status(400).json({
+          message: "Registration Failed. User already exists.",
+          success: false,
+          state: "unverified",
+        });
+      }
     } else {
-      res.status(400).json({ message: "Registration Failed.", success: false });
+      res.status(400).json({
+        message: "Registration Failed.",
+        success: false,
+        state: "failed",
+      });
     }
   }
   res.end();
@@ -422,6 +563,7 @@ router.post(
         if (token) {
           if (new Date(Date.now()) <= token.expir_at) {
             //token not expired continue...
+
             return response.status(200).send({ validLink: true });
           } else {
             //token expired delete from database
@@ -432,7 +574,6 @@ router.post(
           }
         } else {
           // invalid token - token does not exist
-          console.log("hello");
           return response.status(401).send({ validLink: false });
         }
       }
@@ -474,7 +615,12 @@ router.post(
             where: { id: userId },
             data: { salt, password: hash },
           });
-          await prisma.token.delete({ where: { id: token.id } });
+          await prisma.token.deleteMany({
+            where: {
+              user_id: token.user_id,
+              token_type: "PASSWORD_RESET",
+            },
+          });
 
           const htmlPart = `
           <div style="width:50%; margin:0 auto; color:black;">

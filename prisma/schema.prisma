@@ -111,7 +111,8 @@ model Order {
 model Tracking{
   id               String  @id @default(uuid())
   tracking_number  String
-  carrier          String
+  carrier          Carrier
+  email_sent       Boolean @default(false)
   order_id         Int     @unique
   order            Order   @relation(fields: [order_id],references: [id])
 }
@@ -305,6 +306,7 @@ enum UserRole {
 
 enum Token_Type {
   PASSWORD_RESET
+  EMAIL_VERIFICATION
 }
 enum OrderStatus {
   PAYMENT_FAILED
@@ -316,4 +318,10 @@ enum OrderStatus {
   EXCHANGED
   CANCELED
   COMPLETED
+}
+
+enum Carrier {
+  UPS
+  USPS
+  FEDEX
 }
