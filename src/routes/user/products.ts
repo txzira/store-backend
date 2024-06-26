@@ -159,14 +159,27 @@ router.get(
       let categoryName = request.params.categoryName;
       categoryName =
         categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+
       const products = await db.product.findMany({
         where: { categories: { some: { name: categoryName } }, active: true },
         include: {
-          images: true,
+          brand: true,
+          images: { orderBy: { position: "asc" } },
           attributeGroups: {
             include: { attributes: { include: { images: true } } },
           },
+          productVariants: {
+            include: {
+              productVariantAttributes: {
+                include: {
+                  attribute: true,
+                },
+              },
+              variantImages: true,
+            },
+          },
         },
+        orderBy: { createdAt: "asc" },
       });
       return response.status(200).json(products);
     } catch (error) {
