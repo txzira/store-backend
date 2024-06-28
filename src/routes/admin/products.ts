@@ -19,6 +19,7 @@ router.get(
             include: { attributes: { include: { images: true } } },
           },
         },
+        orderBy: { name: "asc" },
       });
 
       return response.status(200).json(products);
@@ -50,6 +51,7 @@ router.post(
           quantity: productForm.stock,
           categories: { connect: categories },
           active: productForm.active,
+          available: productForm.available,
           ...(productForm.brand ? { brandId: productForm.brand } : 0),
 
           price: productForm.price,
@@ -126,6 +128,7 @@ router.put(
           quantity: product.stock,
           categories: { set: [], connect: categories },
           active: product.active,
+          available: product.available,
           ...(product.brand
             ? { brandId: product.brand }
             : { brand: { disconnect: true } }),
@@ -288,37 +291,51 @@ router.post(
         });
 
         const combinations = generateVariants(array);
-        combinations.map(async (combination) => {
-          const images: any[] = [];
-          const arr = combination.map((group) => {
-            const attributeObj = {
-              attributeGroup: { connect: { id: group.attributeGroupId } },
-              attribute: { connect: { id: group.id } },
-            };
-            group.images.map((image: any) => {
-              images.push({
-                publicId: image.publicId,
-                url: image.url,
-                importedFromAttribute: true,
+        await Promise.all(
+          combinations.map(async (combination) => {
+            const images: any[] = [];
+            const arr = combination.map((group) => {
+              const attributeObj = {
+                attributeGroup: { connect: { id: group.attributeGroupId } },
+                attribute: { connect: { id: group.id } },
+              };
+              group.images.map((image: any) => {
+                images.push({
+                  publicId: image.publicId,
+                  url: image.url,
+                  importedFromAttribute: true,
+                });
               });
+              return attributeObj;
             });
-            return attributeObj;
-          });
-          await db.productVariant.create({
-            data: {
-              product: { connect: { id: product.id } },
-              price: product.price,
-              quantity: 0,
-              productVariantAttributes: {
-                create: arr,
+            await db.productVariant.create({
+              data: {
+                product: { connect: { id: product.id } },
+                price: product.price,
+                quantity: 0,
+                productVariantAttributes: {
+                  create: arr,
+                },
+                variantImages: {
+                  create: [...images],
+                },
               },
-              variantImages: {
-                create: [...images],
+            });
+          })
+        );
+        const variants = await db.productVariant.findMany({
+          where: { productId: Number(productId) },
+          include: {
+            productVariantAttributes: {
+              include: {
+                attribute: { include: { images: true } },
+                attributeGroup: { include: { attributes: true } },
               },
             },
-          });
+            variantImages: true,
+          },
         });
-        return response.status(201).json(`Success.`);
+        return response.status(201).json({ message: "success.", variants });
       }
     } catch (error: any) {
       return response.status(500).json(error.message);

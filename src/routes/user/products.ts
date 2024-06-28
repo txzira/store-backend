@@ -80,7 +80,6 @@ router.get(
         },
         orderBy: { createdAt: "asc" },
       });
-      // console.log(products[9]);
 
       return response.status(200).json(products);
     } catch (error) {
