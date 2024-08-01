@@ -7,7 +7,7 @@ const router = express.Router();
 const nodemailer = require("../../lib/nodemailer");
 
 const stripe = new Stripe.Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2023-08-16",
+  apiVersion: "2024-06-20",
 });
 
 interface CartItem {
@@ -38,6 +38,7 @@ router.post(
     try {
       // Creates a PaymentIntent with order total and sends PaymentIntent's client secret.
       const { items }: { items: CartItem[] } = request.body;
+      console.log(items);
       const orderTotal = await calculateOrderAmount(items, response);
       if (orderTotal) {
         const paymentIntent = await stripe.paymentIntents.create({
@@ -95,6 +96,7 @@ router.post(
         shippingAddress: any;
       } = request.body;
       const lineItems = [];
+      console.log({ items });
       if (items.length) {
         for (let i = 0; i < items.length; i++) {
           const lineItemTotal = await calculateLineItemTotal(items[i]);
@@ -172,23 +174,74 @@ router.post(
   async (request: express.Request | any, response: express.Response) => {
     try {
       const {
-        requestShippingForm,
-        requestBillingForm,
+        email,
         requestCart,
         shippingMethod,
         calculatedTax,
         orderTotal,
         paymentIntentId,
       }: {
-        requestShippingForm: any;
-        requestBillingForm: any;
+        email: any;
         requestCart: any;
         shippingMethod: db.ShippingMethod;
         calculatedTax: any;
         orderTotal: any;
         paymentIntentId: any;
       } = request.body;
+
       const user = request.user;
+
+      const cart = await createCart(requestCart, user);
+
+      const order = await prisma.order.create({
+        data: {
+          ...(user ? { customerId: user.id } : null),
+          cartId: cart.id,
+          shippingTotal: shippingMethod.price,
+          taxTotal: calculatedTax,
+          cartTotal: cart.cartTotal,
+          orderTotal: orderTotal,
+          customerEmail: email,
+          status: "PAYMENT_PENDING",
+          shippingMethodId: shippingMethod.id,
+        },
+        include: {
+          cart: { include: { cartItems: true } },
+          shippingMethod: { select: { name: true, price: true } },
+        },
+      });
+      console.log("HEREE!");
+
+      await stripe.paymentIntents.update(paymentIntentId, {
+        metadata: { orderId: order.id },
+      });
+
+      return response.status(200).json({
+        message: "success",
+        order: { id: order.id, email: order.customerEmail },
+      });
+    } catch (error: any) {
+      console.log(error.message);
+      return response.status(400).json({ message: "Failed" });
+    }
+  }
+);
+
+router.post(
+  "/checkout/update-order",
+  async (request: express.Request, response: express.Response) => {
+    try {
+      const {
+        orderId,
+        requestShippingForm,
+        requestBillingForm,
+        paymentIntentId,
+      }: {
+        orderId: number;
+        requestShippingForm: any;
+        requestBillingForm: any;
+        paymentIntentId: any;
+      } = request.body;
 
       const paymentIntent = await stripe.paymentIntents.retrieve(
         paymentIntentId
@@ -197,10 +250,6 @@ router.post(
         paymentIntent.latest_charge?.toString()!
       );
       const card = charge.payment_method_details?.card!;
-
-      // console.log({ shippingMethod, calculatedTax, orderTotal });
-
-      const cart = await createCart(requestCart, user);
 
       const dbCard = await prisma.card.create({
         data: {
@@ -211,17 +260,9 @@ router.post(
         },
       });
 
-      const order = await prisma.order.create({
+      const order = await prisma.order.update({
+        where: { id: Number(orderId) },
         data: {
-          ...(user ? { customerId: user.id } : null),
-          cartId: cart.id,
-          shippingTotal: shippingMethod.price,
-          taxTotal: calculatedTax,
-          cartTotal: cart.cartTotal,
-          orderTotal: orderTotal,
-          customerEmail: requestShippingForm.email,
-          status: "PAYMENT_PENDING",
-          shippingMethodId: shippingMethod.id,
           cardId: dbCard.id,
         },
         include: {
@@ -271,138 +312,138 @@ router.post(
       let orderCartHtmlList = "";
       for (let i = 0; i < orderCart.length; i++) {
         const cartItemHtml = `
-          <tr style="width:100%; border-bottom: 1px solid;">
-            <td colspan="1">
-              <img src="${
-                orderCart[i].image
-              }" width="75px" height="75px" alt="cart-item-image"/>
-            </td>
-            <td colspan="1">
-              <p style="font-weight:600;">${orderCart[i].productName} x ${
+        <tr style="width:100%; border-bottom: 1px solid;">
+          <td colspan="1">
+            <img src="${
+              orderCart[i].image
+            }" width="75px" height="75px" alt="cart-item-image"/>
+          </td>
+          <td colspan="1">
+            <p style="font-weight:600;">${orderCart[i].productName} x ${
           orderCart[i].quantity
         }</p>
-              ${
-                orderCart[i].variantName
-                  ? `<p style="color:gray;">${orderCart[i].variantName}</p>`
-                  : ""
-              }
-            </td>
-            <td style="font-weight:600;" colspan="1">${usDollarformatter.format(
-              orderCart[i].price
-            )}</td>
-          </tr>
-        `;
+            ${
+              orderCart[i].variantName
+                ? `<p style="color:gray;">${orderCart[i].variantName}</p>`
+                : ""
+            }
+          </td>
+          <td style="font-weight:600;" colspan="1">${usDollarformatter.format(
+            orderCart[i].price
+          )}</td>
+        </tr>
+      `;
         orderCartHtmlList += cartItemHtml;
       }
 
       const htmlPart = `
-      <div style="width:75%; margin:0 auto; color:black;">
-        <div style="text-align:center;">
-          <img width="550px" height="75px" src="${process.env.COMPANY_LOGO} "/>
-        </div>
-        <p>Hello ${shippingAddress.firstName},</p>
-        <br/>
-        <p>This is a quick email to say we've received your order.</p>
-        <p>Once everything is confirmed and ready to ship, we'll send you another email with the tracking details and any other information about your package.</p>
-        <p>Your shipping ETA applies from the time you receive this email which should be about one working day from now. We'll follow up as quickly as possible!</p>
-        <p>In the meantime, if you have any questions, send us an email at -company email- and we'll be happy to help.</p>
-        <br/>
-        <hr/>
-        <br/>
-        <h2>Order Summary</h2>
-        <table style="width:80%; border-collapse: collapse;">
-          <tbody>
-            ${orderCartHtmlList}
-            <tr style="width:100%; padding-top:8px;">
-              <td colspan="1"></td>
-              <td style="font-weight:600;" colspan="1">Sub-total</td>
-              <td style="font-weight:600;" colspan="1">${usDollarformatter.format(
-                order.cartTotal
-              )}</td>
-            </tr>
-            <tr style="width:100%;">
-              <td colspan="1"></td>
-              <td style="font-weight:600;" colspan="1">Shipping</td>
-              <td style="font-weight:600;" colspan="1">${usDollarformatter.format(
-                order.shippingTotal
-              )}</td>
-            </tr>
-            <tr style="width:100%; border-bottom: 1px solid; padding-bottom:8px;">
-              <td colspan="1"></td>
-              <td style="font-weight:600;" colspan="1">Taxes</td>
-              <td style="font-weight:600;" colspan="1">${usDollarformatter.format(
-                order.taxTotal
-              )}</td>
-            </tr>
-            <tr style="width:100%;">
-              <td colspan="1"></td>
-              <td style="font-weight:600;" colspan="1">Total</td>
-              <td style="font-weight:600;" colspan="1">${usDollarformatter.format(
-                order.orderTotal
-              )}</td>
-            </tr>
-          </tbody>
-        </table>
-        <br/>
-        <hr/>
-        <br/>
-        <h2>Customer Information</h2>
-        <div style="display:flex; width:100%;">
-          <div style="margin-right: 150px;">
-            <h3>Shipping Address</h3>
-            <div>
-              <p style="margin:0;">${shippingAddress.firstName} ${
+    <div style="width:75%; margin:0 auto; color:black;">
+      <div style="text-align:center;">
+        <img width="550px" height="75px" src="${process.env.COMPANY_LOGO} "/>
+      </div>
+      <p>Hello ${shippingAddress.firstName},</p>
+      <br/>
+      <p>This is a quick email to say we've received your order.</p>
+      <p>Once everything is confirmed and ready to ship, we'll send you another email with the tracking details and any other information about your package.</p>
+      <p>Your shipping ETA applies from the time you receive this email which should be about one working day from now. We'll follow up as quickly as possible!</p>
+      <p>In the meantime, if you have any questions, send us an email at -company email- and we'll be happy to help.</p>
+      <br/>
+      <hr/>
+      <br/>
+      <h2>Order Summary</h2>
+      <table style="width:80%; border-collapse: collapse;">
+        <tbody>
+          ${orderCartHtmlList}
+          <tr style="width:100%; padding-top:8px;">
+            <td colspan="1"></td>
+            <td style="font-weight:600;" colspan="1">Sub-total</td>
+            <td style="font-weight:600;" colspan="1">${usDollarformatter.format(
+              order.cartTotal
+            )}</td>
+          </tr>
+          <tr style="width:100%;">
+            <td colspan="1"></td>
+            <td style="font-weight:600;" colspan="1">Shipping</td>
+            <td style="font-weight:600;" colspan="1">${usDollarformatter.format(
+              order.shippingTotal
+            )}</td>
+          </tr>
+          <tr style="width:100%; border-bottom: 1px solid; padding-bottom:8px;">
+            <td colspan="1"></td>
+            <td style="font-weight:600;" colspan="1">Taxes</td>
+            <td style="font-weight:600;" colspan="1">${usDollarformatter.format(
+              order.taxTotal
+            )}</td>
+          </tr>
+          <tr style="width:100%;">
+            <td colspan="1"></td>
+            <td style="font-weight:600;" colspan="1">Total</td>
+            <td style="font-weight:600;" colspan="1">${usDollarformatter.format(
+              order.orderTotal
+            )}</td>
+          </tr>
+        </tbody>
+      </table>
+      <br/>
+      <hr/>
+      <br/>
+      <h2>Customer Information</h2>
+      <div style="display:flex; width:100%;">
+        <div style="margin-right: 150px;">
+          <h3>Shipping Address</h3>
+          <div>
+            <p style="margin:0;">${shippingAddress.firstName} ${
         shippingAddress.lastName
       }</p>
-              <p style="margin:0;">${shippingAddress.streetAddress}${
+            <p style="margin:0;">${shippingAddress.streetAddress}${
         shippingAddress.streetAddress2
           ? ` ${shippingAddress.streetAddress2}`
           : ""
       }</p>
-              <p style="margin:0;">${shippingAddress.city}, ${
+            <p style="margin:0;">${shippingAddress.city}, ${
         shippingAddress.state
       } ${shippingAddress.zipCode}</p>
-              <p style="margin:0;">${shippingAddress.country}</p>
-            </div>
+            <p style="margin:0;">${shippingAddress.country}</p>
           </div>
-          <div >
-            <h3>Billing Address</h3>
-            <div>
-              <p style="margin:0;">${billingAddress.firstName} ${
+        </div>
+        <div >
+          <h3>Billing Address</h3>
+          <div>
+            <p style="margin:0;">${billingAddress.firstName} ${
         billingAddress.lastName
       }</p>
-              <p style="margin:0;">${billingAddress.streetAddress}${
+            <p style="margin:0;">${billingAddress.streetAddress}${
         billingAddress.streetAddress2 ? ` ${billingAddress.streetAddress2}` : ""
       }</p>
-              <p style="margin:0;">${billingAddress.city}, ${
+            <p style="margin:0;">${billingAddress.city}, ${
         billingAddress.state
       } ${billingAddress.zipCode}</p>
-              <p style="margin:0;">${billingAddress.country}</p>
-            </div>
+            <p style="margin:0;">${billingAddress.country}</p>
           </div>
         </div>
-        <div style="display:flex; width:100%; ">
-          <div style="margin-right: 150px;">
-              <h3>Shipping Method</h3>
-              <p style="margin:0;">${
-                order.shippingMethod.name
-              } - ${usDollarformatter.format(order.shippingMethod.price)}</p>
-          </div>
-          <div>
-              <h3>Payment Method</h3>
-              <p style="margin:0;">${
-                charge.payment_method_details?.card?.brand
-              } - ${usDollarformatter.format(order.orderTotal)}</p>
-              
-          </div>
-
-        </div>
-
-
-
-        <p>-Your favorite shreders at ${process.env.COMPANY_NAME}</p>
       </div>
-    `;
+      <div style="display:flex; width:100%; ">
+        <div style="margin-right: 150px;">
+            <h3>Shipping Method</h3>
+            <p style="margin:0;">${
+              order.shippingMethod.name
+            } - ${usDollarformatter.format(order.shippingMethod.price)}</p>
+        </div>
+        <div>
+            <h3>Payment Method</h3>
+            <p style="margin:0;">${
+              charge.payment_method_details?.card?.brand
+            } - ${usDollarformatter.format(order.orderTotal)}</p>
+            
+        </div>
+
+      </div>
+
+
+
+      <p>-Your favorite shreders at ${process.env.COMPANY_NAME}</p>
+    </div>
+  `;
 
       const subject = `Order No. ${order.id} Confirmation - ${process.env.COMPANY_NAME}`;
 
@@ -435,6 +476,7 @@ router.get(
         include: {
           cart: { include: { cartItems: true } },
           shippingAddress: true,
+          customer: { select: { firstName: true, lastName: true } },
           billingAddress: true,
           shippingMethod: { select: { name: true, price: true } },
           card: {

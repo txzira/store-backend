@@ -10,7 +10,7 @@ datasource db {
 
 model User {
   id              Int      @id @default(autoincrement())
-  socialId        String? 
+  socialId        String?  
   socialProvider  String?
   email           String   @unique
   firstName       String
@@ -100,8 +100,8 @@ model Order {
   customer            User?                 @relation(fields: [customerId], references: [id])
   cartId              Int                   @unique
   cart                Cart                  @relation(fields: [cartId], references: [id])
-  cardId              String                @unique
-  card                Card                  @relation(fields:[cardId],references: [id])
+  cardId              String?                @unique
+  card                Card?                  @relation(fields:[cardId],references: [id])
   shippingAddress     OrderShippingAddress?  
   billingAddress      OrderBillingAddress?  
   shippingMethod      ShippingMethod        @relation(fields:[shippingMethodId], references: [id], onUpdate: NoAction)

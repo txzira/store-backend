@@ -3,6 +3,9 @@ const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 // const session = require("cookie-session");
 const session = require("express-session");
+import createMemoryStore = require("memorystore");
+
+const MemoryStore = createMemoryStore(session);
 
 const passport = require("passport");
 require("dotenv").config();
@@ -28,12 +31,16 @@ const userUsersRoutes = require("./routes/user/users");
 const userAccountRoutes = require("./routes/user/account");
 const userBrandsRoutes = require("./routes/user/brands");
 const userShippingMethodRoutes = require("./routes/user/shippingmethod");
+const stripeWebhook = require("./routes/stripe/webhook");
 
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
 
 app.use(express.static("public"));
 app.use(cookieParser());
+// app.use(bodyParser.raw({ type: "*/*" }));
+app.use("/", stripeWebhook);
+
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(morgan("tiny"));
@@ -50,6 +57,7 @@ app.use(
         ? { sameSite: "none", secure: true }
         : null),
     },
+    store: new MemoryStore({ checkPeriod: 86400000 }),
   })
 );
 
